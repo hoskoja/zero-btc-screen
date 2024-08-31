@@ -1,0 +1,42 @@
+import os
+from PIL import Image, ImageDraw, ImageFont
+try:
+    from waveshare_epd import epd5in83
+except ImportError:
+    pass
+from data.plot import Plot
+from presentation.observer import Observer
+
+SCREEN_HEIGHT = 480
+SCREEN_WIDTH = 648
+
+FONT_SMALL = ImageFont.truetype(
+    os.path.join(os.path.dirname(__file__), os.pardir, 'Roses.ttf'), 10)
+FONT_LARGE = ImageFont.truetype(
+    os.path.join(os.path.dirname(__file__), os.pardir, 'PixelSplitter-Bold.ttf'), 27)
+
+class Epd5in83v1(Observer):
+
+    def __init__(self):
+        self.epd = epd5in83.EPD()
+        self.epd.init()
+        self.image = Image.new('1', (SCREEN_WIDTH, SCREEN_HEIGHT), 255)
+        self.draw = ImageDraw.Draw(self.image)
+
+    def update(self, data):
+        self.draw.rectangle((0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), fill=255)
+        self.draw.text((10, 10), "BTC Price:", font=FONT_LARGE, fill=0)
+        self.draw.text((10, 50), f"${data['price']}", font=FONT_LARGE, fill=0)
+        self.epd.display(self.epd.getbuffer(self.image))  # Aktualizace displeje
+        self.epd.sleep()
+
+    def clear(self):
+        self.epd.Clear()
+
+if __name__ == "__main__":
+    epd = Epd5in83v1()
+    try:
+        data = {"price": "50000"}
+        epd.update(data)
+    except KeyboardInterrupt:
+        epd.clear()
